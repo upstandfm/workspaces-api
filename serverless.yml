@@ -50,6 +50,7 @@ provider:
     - Effect: Allow
       Action:
         - dynamodb:GetItem
+        - dynamodb:Query
       Resource: ${state:infra.workspacesTableArn}
 
 package:
