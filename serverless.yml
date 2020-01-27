@@ -63,11 +63,24 @@ package:
 functions:
   getWorkspace:
     handler: src/handler.getWorkspace
-    description: Gets the user's workspace
+    description: Gets a user's workspace
     events:
       - http:
           method: get
           path: /{workspaceId}
+          request:
+            parameters:
+              paths:
+                workspaceId: true
+          cors: ${self:custom.cors}
+          authorizer: ${self:custom.authorizer}
+  getMembers:
+    handler: src/handler.getMembers
+    description: Gets a user's workspace members
+    events:
+      - http:
+          method: get
+          path: /{workspaceId}/members
           request:
             parameters:
               paths:
