@@ -1,0 +1,97 @@
+org: upstandfm
+app: api
+service: workspaces-api
+
+plugins:
+  - serverless-domain-manager
+
+custom:
+  customDomain:
+    domainName: api.upstand.fm
+    basePath: workspaces
+    stage: ${opt:stage, 'prod'}
+    createRoute53Record: false
+  cors:
+    origin: '*'
+  authorizer:
+    arn: ${secrets:AUTH0_AUTHORIZER_ARN}
+    resultTtlInSeconds: 60
+    identitySource: method.request.header.Authorization
+    # Note that Bearer must be capitalized
+    identityValidationExpression: '^Bearer [-0-9a-zA-z\.]*$'
+    type: token
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, 'prod'}
+  region: ${opt:region, 'eu-central-1'}
+  cfnRole: ${secrets:CFN_ROLE_ARN}
+  memorySize: 128
+  timeout: 3
+  deploymentBucket:
+    name: upstandfm-deployments
+    serverSideEncryption: AES256
+  environment:
+    # Reuse TCP connection to reduce request latency
+    # For more info see:
+    # https://github.com/aws/aws-sdk-js/blob/master/CHANGELOG.md#24630
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+    CORS_ALLOW_ORIGIN: ${self:custom.cors.origin}
+    # The ARN has the format "arn:aws:dynamodb:::table/tableName"
+    # Splitting on "/" gives us the name
+    WORKSPACES_TABLE_NAME:
+      'Fn::Select':
+        ['1', { 'Fn::Split': ['/', '${state:infra.workspacesTableArn}'] }]
+    READ_WORKSPACE_SCOPE: 'read:workspace'
+
+  # See: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_actions-resources-contextkeys.html
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+      Resource: ${state:infra.workspacesTableArn}
+
+package:
+  exclude:
+    - ./*
+    - ./**/*.spec.js
+  include:
+    - node_modules
+    - src
+
+functions:
+  getWorkspace:
+    handler: src/handler.getWorkspace
+    description: Gets the user's workspace
+    events:
+      - http:
+          method: get
+          path: /{workspaceId}
+          request:
+            parameters:
+              paths:
+                workspaceId: true
+          cors: ${self:custom.cors}
+          authorizer: ${self:custom.authorizer}
+
+resources:
+  Resources:
+    GatewayResponseDefault4XX:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+    GatewayResponseDefault5XX:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+        ResponseType: DEFAULT_5XX
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
