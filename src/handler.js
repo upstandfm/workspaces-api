@@ -24,7 +24,7 @@ const documentClient = new DynamoDB.DocumentClient({
 });
 
 /**
- * Lambda APIG proxy integration that gets the user's workspace.
+ * Lambda APIG proxy integration that gets a user's workspace.
  *
  * @param {Object} event - HTTP input
  * @param {Object} context - AWS lambda context
@@ -68,6 +68,53 @@ module.exports.getWorkspace = async (event, context) => {
     }
 
     return sendRes.json(200, workspaceData.Item);
+  } catch (err) {
+    return handleAndSendError(context, err, sendRes);
+  }
+};
+
+/**
+ * Lambda APIG proxy integration that gets a user's workspace members.
+ *
+ * @param {Object} event - HTTP input
+ * @param {Object} context - AWS lambda context
+ *
+ * @return {Object} HTTP output
+ *
+ * For more info on HTTP input see:
+ * https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
+ *
+ * For more info on AWS lambda context see:
+ * https://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html
+ *
+ * For more info on HTTP output see:
+ * https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format
+ */
+module.exports.getMembers = async (event, context) => {
+  try {
+    const { authorizer } = event.requestContext;
+
+    validateAuthorizerData(authorizer);
+    validateScope(authorizer.scope, READ_WORKSPACE_SCOPE);
+
+    if (event.pathParameters.workspaceId !== authorizer.workspaceId) {
+      const err = new Error('Not Found');
+      err.statusCode = 404;
+      err.details = `You might not have access to this workspace, or it doesn't exist.`;
+      throw err;
+    }
+
+    const membersData = await workspaces.getMembers(
+      documentClient,
+      WORKSPACES_TABLE_NAME,
+      authorizer.workspaceId
+    );
+
+    const resData = {
+      items: membersData.Items
+    };
+
+    return sendRes.json(200, resData);
   } catch (err) {
     return handleAndSendError(context, err, sendRes);
   }
