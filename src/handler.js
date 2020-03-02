@@ -11,7 +11,8 @@ const { captureError } = require('./utils');
 const {
   CORS_ALLOW_ORIGIN,
   WORKSPACES_TABLE_NAME,
-  READ_WORKSPACE_SCOPE
+  READ_WORKSPACE_SCOPE,
+  READ_WORKSPACE_MEMBERS_SCOPE
 } = process.env;
 
 // For more info see:
@@ -88,7 +89,7 @@ module.exports.getWorkspaceMembers = async (event, context) => {
     const res = await controller.getWorkspaceMembers(
       event,
       context,
-      READ_WORKSPACE_SCOPE
+      READ_WORKSPACE_MEMBERS_SCOPE
     );
     return res;
   } catch (err) {
