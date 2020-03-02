@@ -1,10 +1,12 @@
 'use strict';
 
 const DynamoDB = require('aws-sdk/clients/dynamodb');
+const bodyParser = require('@mooncake-dev/lambda-body-parser');
 const createResHandler = require('@mooncake-dev/lambda-res-handler');
-const workspaces = require('./workspaces');
-const handleAndSendError = require('./handle-error');
-const { validateAuthorizerData, validateScope } = require('./validators');
+const createStorageService = require('./storage-service');
+const createWorkspaceService = require('./workspace-service');
+const createController = require('./controller');
+const { captureError } = require('./utils');
 
 const {
   CORS_ALLOW_ORIGIN,
@@ -12,15 +14,25 @@ const {
   READ_WORKSPACE_SCOPE
 } = process.env;
 
-const defaultHeaders = {
-  'Access-Control-Allow-Origin': CORS_ALLOW_ORIGIN
-};
-const sendRes = createResHandler(defaultHeaders);
-
 // For more info see:
 // https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#constructor-property
 const documentClient = new DynamoDB.DocumentClient({
   convertEmptyValues: true
+});
+
+const storageService = createStorageService(
+  documentClient,
+  WORKSPACES_TABLE_NAME
+);
+
+const workspaceService = createWorkspaceService(storageService);
+
+const defaultHeaders = {
+  'Access-Control-Allow-Origin': CORS_ALLOW_ORIGIN
+};
+const controller = createController(workspaceService, {
+  bodyParser,
+  res: createResHandler(defaultHeaders)
 });
 
 /**
@@ -40,41 +52,22 @@ const documentClient = new DynamoDB.DocumentClient({
  * For more info on HTTP output see:
  * https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format
  */
-module.exports.getWorkspace = async (event, context) => {
+module.exports.getUserWorkspace = async (event, context) => {
   try {
-    const { authorizer } = event.requestContext;
-
-    validateAuthorizerData(authorizer);
-    validateScope(authorizer.scope, READ_WORKSPACE_SCOPE);
-
-    if (event.pathParameters.workspaceId !== authorizer.workspaceId) {
-      const err = new Error('Not Found');
-      err.statusCode = 404;
-      err.details = `You might not have access to this workspace, or it doesn't exist.`;
-      throw err;
-    }
-
-    const workspaceData = await workspaces.getOne(
-      documentClient,
-      WORKSPACES_TABLE_NAME,
-      authorizer.workspaceId
+    const res = await controller.getUserWorkspace(
+      event,
+      context,
+      READ_WORKSPACE_SCOPE
     );
-
-    if (!workspaceData.Item) {
-      const err = new Error('Not Found');
-      err.statusCode = 404;
-      err.details = `You might not have access to this workspace, or it doesn't exist.`;
-      throw err;
-    }
-
-    return sendRes.json(200, workspaceData.Item);
+    return res;
   } catch (err) {
-    return handleAndSendError(context, err, sendRes);
+    console.log('Failed to get workspace: ', err);
+    captureError(context, err);
   }
 };
 
 /**
- * Lambda APIG proxy integration that gets a user's workspace members.
+ * Lambda APIG proxy integration that gets all workspace members.
  *
  * @param {Object} event - HTTP input
  * @param {Object} context - AWS lambda context
@@ -90,32 +83,16 @@ module.exports.getWorkspace = async (event, context) => {
  * For more info on HTTP output see:
  * https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format
  */
-module.exports.getMembers = async (event, context) => {
+module.exports.getWorkspaceMembers = async (event, context) => {
   try {
-    const { authorizer } = event.requestContext;
-
-    validateAuthorizerData(authorizer);
-    validateScope(authorizer.scope, READ_WORKSPACE_SCOPE);
-
-    if (event.pathParameters.workspaceId !== authorizer.workspaceId) {
-      const err = new Error('Not Found');
-      err.statusCode = 404;
-      err.details = `You might not have access to this workspace, or it doesn't exist.`;
-      throw err;
-    }
-
-    const membersData = await workspaces.getMembers(
-      documentClient,
-      WORKSPACES_TABLE_NAME,
-      authorizer.workspaceId
+    const res = await controller.getWorkspaceMembers(
+      event,
+      context,
+      READ_WORKSPACE_SCOPE
     );
-
-    const resData = {
-      items: membersData.Items
-    };
-
-    return sendRes.json(200, resData);
+    return res;
   } catch (err) {
-    return handleAndSendError(context, err, sendRes);
+    console.log('Failed to get workspace members: ', err);
+    captureError(context, err);
   }
 };

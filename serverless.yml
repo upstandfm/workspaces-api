@@ -62,8 +62,8 @@ package:
     - src
 
 functions:
-  getWorkspace:
-    handler: src/handler.getWorkspace
+  getUserWorkspace:
+    handler: src/handler.getUserWorkspace
     description: Gets a user's workspace
     events:
       - http:
@@ -75,9 +75,9 @@ functions:
                 workspaceId: true
           cors: ${self:custom.cors}
           authorizer: ${self:custom.authorizer}
-  getMembers:
-    handler: src/handler.getMembers
-    description: Gets a user's workspace members
+  getWorkspaceMembers:
+    handler: src/handler.getWorkspaceMembers
+    description: Gets all workspace members
     events:
       - http:
           method: get
