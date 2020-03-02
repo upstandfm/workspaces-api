@@ -57,16 +57,16 @@ module.exports = function createController(workspace, options = {}) {
           throw err;
         }
 
-        const workspace = await workspace.get(authorizer.workspaceId);
+        const item = await workspace.get(authorizer.workspaceId);
 
-        if (!workspace) {
+        if (!item) {
           const err = new Error('Not Found');
           err.statusCode = 404;
           err.details = `You might not have access to this workspace, or it doesn't exist.`;
           throw err;
         }
 
-        return res.json(200, workspace);
+        return res.json(200, item);
       } catch (err) {
         captureError(context, err);
 

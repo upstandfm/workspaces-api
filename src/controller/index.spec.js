@@ -7,7 +7,7 @@ describe('Controller', () => {
     it('throws without an workspace service', () => {
       expect(() => {
         createController();
-      }).toThrowError(/^Provide an workspace service$/);
+      }).toThrowError(/^Provide a workspace service$/);
     });
 
     it('throws without JSON body parser', () => {
