@@ -4,7 +4,7 @@ const createController = require('.');
 
 describe('Controller', () => {
   describe('createController(workspace, options)', () => {
-    it('throws without an workspace service', () => {
+    it('throws without a workspace service', () => {
       expect(() => {
         createController();
       }).toThrowError(/^Provide a workspace service$/);

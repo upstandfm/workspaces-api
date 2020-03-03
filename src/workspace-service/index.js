@@ -33,6 +33,29 @@ module.exports = function createWorkspaceService(db) {
      */
     getMembers(workspaceId) {
       return db.getWorkspaceMembers(workspaceId);
+    },
+
+    /**
+     * Create a workspace member.
+     *
+     * @param {String} workspaceId
+     * @param {Object} data
+     *
+     * @param {String} data.userId
+     * @param {String} data.email
+     * @param {String} data.fullName
+     *
+     * @return {Promise} Resolves with created member
+     */
+    createMember(workspaceId, data) {
+      const now = new Date().toISOString();
+      const item = {
+        ...data,
+        createdBy: 'system',
+        createdAt: now,
+        updatedAt: now
+      };
+      return db.insertWorkspaceMember(workspaceId, item);
     }
   };
 };

@@ -45,6 +45,7 @@ provider:
         ['1', { 'Fn::Split': ['/', '${state:infra.workspacesTableArn}'] }]
     READ_WORKSPACE_SCOPE: 'read:workspace'
     READ_WORKSPACE_MEMBERS_SCOPE: 'read:workspace-members'
+    CREATE_WORKSPACE_MEMBER_SCOPE: 'create:workspace-member'
 
   # See: https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_actions-resources-contextkeys.html
   iamRoleStatements:
@@ -52,6 +53,7 @@ provider:
       Action:
         - dynamodb:GetItem
         - dynamodb:Query
+        - dynamodb:PutItem
       Resource: ${state:infra.workspacesTableArn}
 
 package:
@@ -82,6 +84,19 @@ functions:
     events:
       - http:
           method: get
+          path: /{workspaceId}/members
+          request:
+            parameters:
+              paths:
+                workspaceId: true
+          cors: ${self:custom.cors}
+          authorizer: ${self:custom.authorizer}
+  createWorkspaceMember:
+    handler: src/handler.createWorkspaceMember
+    description: Create a workspace member
+    events:
+      - http:
+          method: post
           path: /{workspaceId}/members
           request:
             parameters:

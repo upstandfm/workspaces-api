@@ -12,7 +12,8 @@ const {
   CORS_ALLOW_ORIGIN,
   WORKSPACES_TABLE_NAME,
   READ_WORKSPACE_SCOPE,
-  READ_WORKSPACE_MEMBERS_SCOPE
+  READ_WORKSPACE_MEMBERS_SCOPE,
+  CREATE_WORKSPACE_MEMBER_SCOPE
 } = process.env;
 
 // For more info see:
@@ -94,6 +95,37 @@ module.exports.getWorkspaceMembers = async (event, context) => {
     return res;
   } catch (err) {
     console.log('Failed to get workspace members: ', err);
+    captureError(context, err);
+  }
+};
+
+/**
+ * Lambda APIG proxy integration that creates a workspace member.
+ *
+ * @param {Object} event - HTTP input
+ * @param {Object} context - AWS lambda context
+ *
+ * @return {Object} HTTP output
+ *
+ * For more info on HTTP input see:
+ * https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
+ *
+ * For more info on AWS lambda context see:
+ * https://docs.aws.amazon.com/lambda/latest/dg/nodejs-prog-model-context.html
+ *
+ * For more info on HTTP output see:
+ * https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format
+ */
+module.exports.createWorkspaceMember = async (event, context) => {
+  try {
+    const res = await controller.createWorkspaceMember(
+      event,
+      context,
+      CREATE_WORKSPACE_MEMBER_SCOPE
+    );
+    return res;
+  } catch (err) {
+    console.log('Failed to create a workspace member: ', err);
     captureError(context, err);
   }
 };

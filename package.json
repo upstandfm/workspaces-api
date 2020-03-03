@@ -40,6 +40,7 @@
     "serverless-domain-manager": "^3.3.1"
   },
   "dependencies": {
+    "@hapi/joi": "^17.1.0",
     "@mooncake-dev/check-symbols": "^1.0.3",
     "@mooncake-dev/lambda-body-parser": "^1.0.4",
     "@mooncake-dev/lambda-res-handler": "^1.1.3",

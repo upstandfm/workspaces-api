@@ -2,6 +2,7 @@
 
 const { captureError } = require('../utils');
 const { validateAuthorizerData, validateScope } = require('../validators');
+const schema = require('../schema');
 
 /**
  * Create a controller to handle HTTP requests.
@@ -108,6 +109,48 @@ module.exports = function createController(workspace, options = {}) {
           items
         };
         return res.json(200, resData);
+      } catch (err) {
+        captureError(context, err);
+
+        const statusCode = err.statusCode || 500;
+        const resData = {
+          message: err.message,
+          details: err.details
+        };
+        return res.json(statusCode, resData);
+      }
+    },
+
+    /**
+     * Create a workspace member.
+     *
+     * @param {Object} event - Lambda HTTP input
+     * @param {Object} context - Lambda context
+     * @param {String} requiredScope - The scope a consumer must have to perform this action
+     *
+     * @return {Promise} Resolves with HTTP output object
+     *
+     */
+    async createWorkspaceMember(event, context, requiredScope) {
+      try {
+        // We don't explicitly validate the authorizer data because this
+        // endpoint may only be called by a "machine client", so we don't have
+        // user-specific information like workspace ID and user ID
+        //
+        // Technically we have a user ID, but in this case its the client ID of
+        // the machine client, and not the user's ID
+        const { authorizer = {} } = event.requestContext;
+
+        validateScope(authorizer.scope, requiredScope);
+
+        const body = bodyParser.json(event.body);
+        const data = schema.validateMember(body);
+        const item = await workspace.createMember(
+          event.pathParameters.workspaceId,
+          data
+        );
+
+        return res.json(201, item);
       } catch (err) {
         captureError(context, err);
 
