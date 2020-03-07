@@ -80,7 +80,7 @@ describe('Workspace service', () => {
 
       // Check if the storage service is called with correct item data
       const itemInput = fakeStorage.insertWorkspaceMember.mock.calls[0][1];
-      expect(itemInput.userId).toEqual(data.userId);
+      expect(itemInput.id).toEqual(data.userId);
       expect(itemInput.email).toEqual(data.email);
       expect(itemInput.fullName).toEqual(data.fullName);
       expect(itemInput.createdBy).toEqual('system');

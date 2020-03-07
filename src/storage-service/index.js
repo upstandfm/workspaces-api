@@ -81,10 +81,10 @@ module.exports = function createStorageService(client, tableName) {
      * @param {String} workspaceId
      * @param {Object} item
      *
+     * @param {String} item.id
      * @param {String} item.createdBy
      * @param {String} item.createdAt
      * @param {String} item.updatedAt
-     * @param {String} item.userId
      * @param {String} item.email
      * @param {String} item.fullName
      *
@@ -108,7 +108,7 @@ module.exports = function createStorageService(client, tableName) {
 
         Item: {
           pk: `workspace#${workspaceId}`,
-          sk: `member#${item.userId}`,
+          sk: `member#${item.id}`,
           ...item
         }
       };

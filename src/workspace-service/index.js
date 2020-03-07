@@ -50,10 +50,12 @@ module.exports = function createWorkspaceService(db) {
     createMember(workspaceId, data) {
       const now = new Date().toISOString();
       const item = {
-        ...data,
+        id: data.userId,
         createdBy: 'system',
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        email: data.email,
+        fullName: data.fullName
       };
       return db.insertWorkspaceMember(workspaceId, item);
     }
